@@ -1,0 +1,158 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, user-scalable=no">
+<title>Penguin Diver</title>
+<style>
+  html, body { margin: 0; height: 100%; overflow: hidden; background: #06304f; }
+  canvas { display: block; width: 100%; height: 100%; touch-action: none; }
+</style>
+</head>
+<body>
+<canvas id="c"></canvas>
+<script>
+const canvas = document.getElementById('c');
+const ctx = canvas.getContext('2d');
+let W, H;
+function resize() {
+  const dpr = window.devicePixelRatio || 1;
+  W = canvas.clientWidth; H = canvas.clientHeight;
+  canvas.width = W * dpr; canvas.height = H * dpr;
+  ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+}
+addEventListener('resize', resize);
+resize();
+
+const diver = { x: W / 2, y: H / 2, angle: 0, flip: 1 };
+const target = { x: W / 2, y: H / 2 };
+const bubbles = [];
+
+function aim(e) { target.x = e.clientX; target.y = e.clientY; }
+canvas.addEventListener('pointermove', aim);
+canvas.addEventListener('pointerdown', aim);
+
+function addBubble(speed) {
+  bubbles.push({
+    x: diver.x + diver.flip * 18 + (Math.random() - 0.5) * 8,
+    y: diver.y - 30,
+    r: 2 + Math.random() * 4,
+    vy: 0.6 + Math.random() * 0.8,
+    phase: Math.random() * 6.28
+  });
+}
+
+let t = 0, bubbleTimer = 0;
+function update() {
+  t += 0.03;
+  const dx = target.x - diver.x, dy = target.y - diver.y;
+  const dist = Math.hypot(dx, dy);
+  const speed = Math.min(dist * 0.04, 6);
+  if (dist > 1) {
+    diver.x += dx / dist * speed;
+    diver.y += dy / dist * speed;
+  }
+  if (Math.abs(dx) > 4) diver.flip = dx > 0 ? 1 : -1;
+  const want = Math.max(-0.6, Math.min(0.6, Math.atan2(dy, Math.abs(dx) + 1) * 0.7));
+  diver.angle += (want - diver.angle) * 0.1;
+
+  bubbleTimer -= 1 + speed;
+  if (bubbleTimer <= 0) { addBubble(speed); bubbleTimer = 14; }
+
+  for (let i = bubbles.length - 1; i >= 0; i--) {
+    const b = bubbles[i];
+    b.y -= b.vy; b.phase += 0.05; b.x += Math.sin(b.phase) * 0.4; b.r += 0.004;
+    if (b.y < -10) bubbles.splice(i, 1);
+  }
+}
+
+function drawBackground() {
+  const g = ctx.createLinearGradient(0, 0, 0, H);
+  g.addColorStop(0, '#2ba5d8'); g.addColorStop(1, '#04203a');
+  ctx.fillStyle = g; ctx.fillRect(0, 0, W, H);
+  ctx.save();
+  ctx.fillStyle = 'rgba(255,255,255,0.05)';
+  for (let i = 0; i < 4; i++) {
+    const x = (i + 0.5) * W / 4 + Math.sin(t + i * 2) * 40;
+    ctx.beginPath();
+    ctx.moveTo(x - 30, 0); ctx.lineTo(x + 30, 0);
+    ctx.lineTo(x + 120, H); ctx.lineTo(x - 60, H);
+    ctx.fill();
+  }
+  ctx.restore();
+}
+
+function drawBubbles() {
+  for (const b of bubbles) {
+    ctx.beginPath();
+    ctx.arc(b.x, b.y, b.r, 0, 6.283);
+    ctx.fillStyle = 'rgba(255,255,255,0.18)';
+    ctx.fill();
+    ctx.strokeStyle = 'rgba(255,255,255,0.7)';
+    ctx.lineWidth = 1.5; ctx.stroke();
+    ctx.beginPath();
+    ctx.arc(b.x - b.r * 0.35, b.y - b.r * 0.35, b.r * 0.25, 0, 6.283);
+    ctx.fillStyle = 'rgba(255,255,255,0.9)'; ctx.fill();
+  }
+}
+
+function ellipse(x, y, rx, ry, color, rot = 0) {
+  ctx.beginPath(); ctx.ellipse(x, y, rx, ry, rot, 0, 6.283);
+  ctx.fillStyle = color; ctx.fill();
+}
+
+function drawDiver() {
+  const bob = Math.sin(t * 2) * 3;
+  ctx.save();
+  ctx.translate(diver.x, diver.y + bob);
+  ctx.scale(diver.flip, 1);
+  ctx.rotate(diver.angle);
+
+  // flippers (feet)
+  const kick = Math.sin(t * 5) * 0.25;
+  ctx.save(); ctx.translate(-6, 40); ctx.rotate(kick);
+  ellipse(-8, 4, 16, 6, '#f4a21d', 0.2); ctx.restore();
+  ctx.save(); ctx.translate(8, 40); ctx.rotate(-kick);
+  ellipse(8, 4, 16, 6, '#f4a21d', -0.2); ctx.restore();
+
+  // body
+  ellipse(0, 10, 28, 38, '#1b2a3a');
+  ellipse(2, 16, 19, 28, '#ffffff');
+
+  // wing
+  const flap = Math.sin(t * 5) * 0.3;
+  ctx.save(); ctx.translate(-22, 0); ctx.rotate(0.5 + flap);
+  ellipse(-4, 12, 8, 24, '#14202d'); ctx.restore();
+
+  // head
+  ellipse(6, -30, 20, 19, '#1b2a3a');
+  // snorkel
+  ctx.strokeStyle = '#e8453c'; ctx.lineWidth = 5; ctx.lineCap = 'round';
+  ctx.beginPath(); ctx.moveTo(-8, -26); ctx.lineTo(-14, -50); ctx.lineTo(-6, -58); ctx.stroke();
+  // mask
+  ellipse(16, -32, 12, 10, 'rgba(160,230,255,0.9)');
+  ctx.strokeStyle = '#e8453c'; ctx.lineWidth = 3;
+  ctx.beginPath(); ctx.ellipse(16, -32, 12, 10, 0, 0, 6.283); ctx.stroke();
+  ctx.beginPath(); ctx.moveTo(4, -33); ctx.lineTo(-12, -35); ctx.stroke();
+  // eye
+  ellipse(19, -32, 3.5, 4, '#111');
+  ellipse(20, -33.5, 1.2, 1.2, '#fff');
+  // beak
+  ctx.beginPath();
+  ctx.moveTo(24, -22); ctx.lineTo(42, -18); ctx.lineTo(24, -13); ctx.closePath();
+  ctx.fillStyle = '#f4a21d'; ctx.fill();
+
+  ctx.restore();
+}
+
+function frame() {
+  update();
+  drawBackground();
+  drawBubbles();
+  drawDiver();
+  requestAnimationFrame(frame);
+}
+frame();
+</script>
+</body>
+</html>
