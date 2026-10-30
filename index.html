@@ -181,10 +181,74 @@ function drawOctopus(o) {
   ctx.restore();
 }
 
+const croc = { x: W * 0.3, dir: 1 };
+
+function drawCroc() {
+  croc.x += croc.dir * 0.7;
+  if (croc.x > W - 160) croc.dir = -1;
+  if (croc.x < 160) croc.dir = 1;
+  const y = H * 0.62 + Math.sin(t * 0.8) * 10;
+  const sway = Math.sin(t * 2) * 10;
+
+  ctx.save();
+  ctx.translate(croc.x, y);
+  ctx.scale(croc.dir, 1);
+  const green = '#4f9a3c', dark = '#3a7a2c';
+
+  // tail
+  ctx.beginPath();
+  ctx.moveTo(-60, -14);
+  ctx.quadraticCurveTo(-120, -10 + sway, -170, sway * 1.6);
+  ctx.quadraticCurveTo(-120, 12 + sway, -60, 16);
+  ctx.fillStyle = green; ctx.fill();
+
+  // legs
+  const kick = Math.sin(t * 3) * 0.4;
+  for (const lx of [-35, 40]) {
+    ctx.save(); ctx.translate(lx, 16); ctx.rotate(kick);
+    ellipse(0, 8, 7, 14, dark, 0.3); ctx.restore();
+  }
+
+  // body
+  ellipse(0, 0, 80, 24, green);
+  ellipse(5, 10, 60, 10, '#b9d77a');
+
+  // bumps along the back
+  ctx.fillStyle = dark;
+  for (let i = -5; i <= 4; i++) {
+    ctx.beginPath();
+    ctx.moveTo(i * 14 - 6, -21); ctx.lineTo(i * 14, -30); ctx.lineTo(i * 14 + 6, -21);
+    ctx.fill();
+  }
+
+  // head and snout
+  ellipse(75, -2, 26, 20, green);
+  ellipse(112, 4, 40, 11, green);
+
+  // mouth and teeth
+  ctx.strokeStyle = dark; ctx.lineWidth = 2;
+  ctx.beginPath(); ctx.moveTo(80, 8); ctx.lineTo(150, 8); ctx.stroke();
+  ctx.fillStyle = '#fff';
+  for (let i = 0; i < 7; i++) {
+    const tx = 90 + i * 9;
+    ctx.beginPath();
+    ctx.moveTo(tx, 8); ctx.lineTo(tx + 3, 14); ctx.lineTo(tx + 6, 8);
+    ctx.fill();
+  }
+
+  // eye and nostril
+  ellipse(78, -14, 7, 7, '#f2d94e');
+  ellipse(79, -14, 1.8, 5, '#111');
+  ellipse(148, -2, 2.5, 2, dark);
+
+  ctx.restore();
+}
+
 function frame() {
   update();
   drawBackground();
   octopuses.forEach(drawOctopus);
+  drawCroc();
   drawBubbles();
   drawDiver();
   requestAnimationFrame(frame);
