@@ -145,9 +145,46 @@ function drawDiver() {
   ctx.restore();
 }
 
+const octopuses = [
+  { fx: 0.18, fy: 0.72, size: 1.0,  color: '#a45bd6', seed: 0 },
+  { fx: 0.55, fy: 0.85, size: 1.25, color: '#ee6a7c', seed: 2 },
+  { fx: 0.85, fy: 0.55, size: 0.8,  color: '#f28c3c', seed: 4 }
+];
+
+function drawOctopus(o) {
+  const s = o.size;
+  const x = o.fx * W + Math.sin(t * 0.7 + o.seed) * 20 * s;
+  const y = o.fy * H + Math.sin(t * 1.1 + o.seed) * 12 * s;
+  ctx.save();
+  ctx.translate(x, y);
+  ctx.scale(s, s);
+
+  // tentacles
+  ctx.strokeStyle = o.color; ctx.lineWidth = 9; ctx.lineCap = 'round';
+  for (let i = 0; i < 8; i++) {
+    const sx = -24 + i * 6.9;
+    ctx.beginPath(); ctx.moveTo(sx, 8);
+    for (let k = 1; k <= 8; k++) {
+      const wave = Math.sin(t * 2 + o.seed + i * 0.8 - k * 0.7) * 6;
+      ctx.lineTo(sx + (i - 3.5) * 2.5 * k * 0.5 + wave, 8 + k * 7);
+    }
+    ctx.lineWidth = 9; ctx.stroke();
+  }
+
+  // head
+  ellipse(0, -10, 32, 30, o.color);
+  ellipse(-10, -22, 8, 5, 'rgba(255,255,255,0.25)', -0.5);
+
+  // eyes
+  ellipse(-12, -6, 7, 8, '#fff'); ellipse(12, -6, 7, 8, '#fff');
+  ellipse(-11, -5, 3.5, 4.5, '#111'); ellipse(13, -5, 3.5, 4.5, '#111');
+  ctx.restore();
+}
+
 function frame() {
   update();
   drawBackground();
+  octopuses.forEach(drawOctopus);
   drawBubbles();
   drawDiver();
   requestAnimationFrame(frame);
